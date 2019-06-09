@@ -1,4 +1,4 @@
-const staticCacheName = 'site-static'
+const staticCacheName = 'site-static-v1'
 const assets = [
     '/',
     '/index.html',
@@ -12,7 +12,7 @@ const assets = [
     'https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2'
 ];
 
-// install service worker
+// install service worker   // 앱 다운로드 이벤트
 self.addEventListener('install', (evt) => {
     // console.log('service worker has been installed');
     evt.waitUntil(
@@ -21,12 +21,21 @@ self.addEventListener('install', (evt) => {
             cache.addAll(assets)
         })
     );
-
 });
 
-// activate event
+// activate event // 앱 활성화 상태
 self.addEventListener('activate', evt => {
     // console.log('service worker has been activated')
+    evt.waitUntil(
+        caches.keys().then(keys => {
+            console.log(keys);  //
+
+            return Promise.all(keys
+                .filter(key => key !== staticCacheName)
+                .map(key => caches.delete(key))
+            )
+        })
+    )
 })
 
 // fetch event - image, css, js
