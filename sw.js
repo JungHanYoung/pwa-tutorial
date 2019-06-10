@@ -1,4 +1,5 @@
 const staticCacheName = 'site-static-v1'
+const dynamicCacheName = 'site-dynamic-v1'
 const assets = [
     '/',
     '/index.html',
@@ -9,7 +10,8 @@ const assets = [
     '/css/materialize.min.css',
     '/img/dish.png',
     'https://fonts.googleapis.com/icon?family=Material+Icons',
-    'https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2'
+    'https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2',
+    '/pages/fallback.html'
 ];
 
 // install service worker   // 앱 다운로드 이벤트
@@ -31,7 +33,7 @@ self.addEventListener('activate', evt => {
             console.log(keys);  //
 
             return Promise.all(keys
-                .filter(key => key !== staticCacheName)
+                .filter(key => key !== staticCacheName && key !== dynamicCacheName)
                 .map(key => caches.delete(key))
             )
         })
@@ -44,7 +46,18 @@ self.addEventListener('fetch', evt => {
     evt.respondWith(
         caches.match(evt.request).then(cacheRes => {
             // cache에 존재 -> cache에 있는 데이터로 대체
-            return cacheRes || fetch(evt.request);
-        })
+            return cacheRes || fetch(evt.request).then(fetchRes => {
+                // Dynamic Cache
+                return caches.open(dynamicCacheName).then(cache => {
+                    cache.put(evt.request.url, fetchRes.clone())
+                    return fetchRes
+                })
+            })
+        }).catch(() => {
+            if (evt.request.url.indexOf('.html') > -1) {
+                return caches.match('/pages/fallback.html');
+            }
+        });
     )
 })
+
